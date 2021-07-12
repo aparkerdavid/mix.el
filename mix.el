@@ -135,7 +135,7 @@ It's used in prompt"
 
 (defun mix--find-closest-mix-file-dir (path)
   "Find the closest mix file to the current buffer PATH."
-    (let ((root (locate-dominating-file path "mix.exs")))
+  (let ((root (locate-dominating-file path "mix.exs")))
     (when root
       (file-truename root))))
 
@@ -147,10 +147,10 @@ It's used in prompt"
 (defun mix--fetch-all-mix-tasks (project-root)
   "Fetches list of raw mix tasks from shell for project in PROJECT-ROOT.
 Use `mix--all-available-tasks` to fetch formatted and filetered tasks."
-    (let* ((default-directory (or project-root default-directory))
+  (let* ((default-directory (or project-root default-directory))
          (cmd (concat (shell-quote-argument mix-path-to-bin) " help"))
          (tasks-string (shell-command-to-string cmd)))
-      (split-string tasks-string "\n")))
+    (split-string tasks-string "\n")))
 
 (defun mix--filter-and-format-mix-tasks (tasks)
   "Filter `iex -S mix` and `mix` commands and format mix TASKS."
@@ -159,8 +159,8 @@ Use `mix--all-available-tasks` to fetch formatted and filetered tasks."
            (lambda (task)
              (and
               (not (or
-                   (string-match-p "iex -S mix" task)
-                   (string-match-p "Runs the default task" task)))
+                    (string-match-p "iex -S mix" task)
+                    (string-match-p "Runs the default task" task)))
               (string-match-p "#" task)))
            tasks)))
     (mapcar #'mix--remove-mix-prefix-from-task tasks-without-iex)))
@@ -168,7 +168,7 @@ Use `mix--all-available-tasks` to fetch formatted and filetered tasks."
 (defun mix--remove-mix-prefix-from-task (task)
   "Remove the first `mix` word from TASK string."
   (let* ((parts (split-string task "mix[[:blank:]]"))
-        (parts-without-first-mix (cdr parts)))
+         (parts-without-first-mix (cdr parts)))
     (concat (mapconcat #'identity parts-without-first-mix " "))))
 
 (defun mix--output-filter ()
@@ -250,6 +250,15 @@ IF USE-UMBRELLA-SUBPROJECTS is t, prompt for umbrells subproject."
   (interactive "P")
   (let ((project-root (if use-umbrella-subprojects (mix--umbrella-subproject-prompt) (mix--project-root))))
     (mix--start "test" mix-command-test project-root prefix)))
+
+;;;###autoload
+(defun mix-test-choose-file (&optional prefix use-umbrella-subprojects)
+  (interactive "P")
+  (let ((project-root (if use-umbrella-subprojects (mix--find-closest-mix-file-dir current-file-path) (mix--project-root))))
+    (--> (directory-files-recursively project-root "**test.exs")
+      (completing-read "Run test file: " it)
+      (concat mix-command-test " " it)
+      (mix--start "test" it project-root prefix))))
 
 ;;;###autoload
 (defun mix-test-current-buffer (&optional prefix use-umbrella-subprojects)

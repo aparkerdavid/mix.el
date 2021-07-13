@@ -254,11 +254,17 @@ IF USE-UMBRELLA-SUBPROJECTS is t, prompt for umbrells subproject."
 ;;;###autoload
 (defun mix-test-choose-file (&optional prefix use-umbrella-subprojects)
   (interactive "P")
-  (let ((project-root (if use-umbrella-subprojects (mix--find-closest-mix-file-dir current-file-path) (mix--project-root))))
-    (--> (directory-files-recursively project-root "**test.exs")
-      (completing-read "Run test file: " it)
-      (concat mix-command-test " " it)
-      (mix--start "test" it project-root prefix))))
+  (let*
+      ((current-file-path (when buffer-file-name (expand-file-name buffer-file-name)))
+       (project-root (if use-umbrella-subprojects
+			 (mix--find-closest-mix-file-dir current-file-path)
+		       (mix--project-root)))
+       (test-dir (concat project-root "test/"))
+       (test-file-paths (directory-files-recursively test-dir "**test.exs"))
+       (default-file-path (if (member current-file-path test-file-paths) current-file-path ""))
+       (chosen-file (completing-read "Run test file: " test-file-paths nil nil default-file-path))
+       (test-command (concat mix-command-test " " chosen-file)))
+    (mix--start "test" test-command project-root prefix)))
 
 ;;;###autoload
 (defun mix-test-current-buffer (&optional prefix use-umbrella-subprojects)
